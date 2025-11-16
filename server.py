@@ -48,6 +48,7 @@ def load_swagger_spec(swagger_url: str):
             base_path = swagger_spec.get('basePath', '')
             base_url = f"{scheme}://{swagger_spec['host']}{base_path}"
 
+        #base_url = "https://petstore.swagger.io/v2"
         print(f"✅ API chargée: {swagger_spec['info']['title']} v{swagger_spec['info']['version']}", flush=True)
         print(f"📍 URL de base: {base_url}", flush=True)
         print(f"🔧 Génération des outils MCP...", flush=True)
@@ -133,6 +134,10 @@ def execute_api_call(tool_name: str, arguments: Dict[str, Any]) -> str:
 
     # Construire l'URL
     url = base_url + path
+    print("######################################")
+    print("URL appelée: " + url)
+    print("######################################")
+
     path_params = {}
     query_params = {}
     body = {}
@@ -282,15 +287,16 @@ def register_tools():
     print(f"✨ {tool_count} outils générés avec succès!", flush=True)
 
 
-swagger_url = "https://petstore3.swagger.io/api/v3/openapi.json"  # os.getenv('SWAGGER_URL')
+swagger_url = "https://petstore.swagger.io/v2/swagger.json"  # os.getenv('SWAGGER_URL')
 load_swagger_spec(swagger_url)
 register_tools()
 
 def main():
     """Point d'entrée principal"""
+    """
     global api_key
 
-    swagger_url = "https://petstore3.swagger.io/api/v3/openapi.json"#os.getenv('SWAGGER_URL')
+    swagger_url = "https://petstore.swagger.io/v2/swagger.json" #os.getenv('SWAGGER_URL')
     api_key = os.getenv('API_KEY')
 
     if not swagger_url:
@@ -305,7 +311,7 @@ def main():
     register_tools()
 
     print("✅ Serveur prêt!", flush=True)
-
+    """
     # Démarrer le serveur
     mcp.run(transport="http", host="127.0.0.1", port=8000)
 
