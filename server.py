@@ -3,12 +3,22 @@ import chromadb
 from chromadb.api.models.Collection import Collection
 from langchain_community.vectorstores import Chroma
 
+
 CHROMA_API_KEY='ck-EjaCYQBCwJRbW4Wh1eGJRzDfZAiqAw73BbYUbFYAS5Ux'
 CHROMA_TENANT='1cedb133-10a5-4fa3-bbfa-ff913e057895'
 CHROME_DATABASE='TEST_RAG'
 CHROMA_COLLECTION = "uipath_sec_doc"
 
 mcp = FastMCP(name="My First MCP Server")
+
+def createChromaClient():
+    return  chromadb.CloudClient(
+                    api_key=CHROMA_API_KEY,
+                    tenant=CHROMA_TENANT,
+                    database=CHROME_DATABASE
+                )
+
+chromaClient = createChromaClient()
 
 @mcp.tool
 def add(a: int, b: int) -> int:
@@ -25,12 +35,7 @@ def personalized_greeting(name: str) -> str:
     """Generates a personalized greeting for the given name."""
     return f"Hello, {name}! Welcome to the MCP server."
 
-def createChromaClient():
-    return  chromadb.CloudClient(
-                    api_key=CHROMA_API_KEY,
-                    tenant=CHROMA_TENANT,
-                    database=CHROME_DATABASE
-                )
+
 
 @mcp.tool()
 def retrieve_uipath_security_doc(query:str) ->list[str]:
@@ -39,9 +44,8 @@ def retrieve_uipath_security_doc(query:str) ->list[str]:
         Returns:
             List of found documents
         """
-    client = createChromaClient()
     vectorstore = Chroma(
-        client=client,
+        client=chromaClient,
         collection_name=CHROMA_COLLECTION
     )
 
