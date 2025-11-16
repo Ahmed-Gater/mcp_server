@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Serveur MCP Swagger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🚀 Générateur de Serveur MCP</h1>
+            <p class="text-gray-600">Créez automatiquement un serveur MCP depuis votre API Swagger/OpenAPI</p>
+        </div>
+
+        <!-- Step 1: URL Input -->
+        <div id="step1" class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                <span class="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span>
+                Entrez l'URL de votre Swagger/OpenAPI
+            </h2>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">URL de la spécification</label>
+                    <input
+                        type="url"
+                        id="swaggerUrl"
+                        placeholder="https://petstore3.swagger.io/api/v3/openapi.json"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nom du serveur MCP</label>
+                    <input
+                        type="text"
+                        id="serverName"
+                        placeholder="mon-api-mcp"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                </div>
+
+                <button
+                    onclick="loadSwagger()"
+                    class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+                >
+                    📡 Analyser la spécification
+                </button>
+            </div>
+
+            <div id="loading" class="hidden mt-4 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                <p class="text-gray-600 mt-2">Chargement en cours...</p>
+            </div>
+
+            <div id="error" class="hidden mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-red-700"></p>
+            </div>
+        </div>
+
+        <!-- Step 2: Tools Review -->
+        <div id="step2" class="hidden bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                <span class="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+                Réviser et personnaliser les outils
+            </h2>
+
+            <div class="mb-4 flex justify-between items-center">
+                <p class="text-gray-600">
+                    <span id="toolCount" class="font-semibold text-indigo-600">0</span> outils découverts
+                </p>
+                <button
+                    onclick="expandAll()"
+                    class="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                >
+                    Tout développer/réduire
+                </button>
+            </div>
+
+            <div id="toolsList" class="space-y-4 max-h-96 overflow-y-auto">
+                <!-- Tools will be inserted here -->
+            </div>
+
+            <div class="mt-6 flex gap-4">
+                <button
+                    onclick="backToStep1()"
+                    class="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                >
+                    ← Retour
+                </button>
+                <button
+                    onclick="generateServer()"
+                    class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                >
+                    ✨ Générer le serveur MCP
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Generated Code -->
+        <div id="step3" class="hidden bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4 flex items-center">
+                <span class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">✓</span>
+                Serveur MCP généré !
+            </h2>
+
+            <div class="mb-4">
+                <p class="text-gray-600 mb-4">Copiez le code ci-dessous dans un fichier <code class="bg-gray-100 px-2 py-1 rounded">server.py</code></p>
+
+                <div class="relative">
+                    <button
+                        onclick="copyCode()"
+                        class="absolute top-2 right-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                    >
+                        📋 Copier
+                    </button>
+                    <pre id="generatedCode" class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm max-h-96">
+                        <!-- Code will be inserted here -->
+                    </pre>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h3 class="font-semibold text-blue-900 mb-2">📦 Installation</h3>
+                <pre class="bg-white p-3 rounded text-sm">pip install "fastmcp>=2.0.0" pyyaml requests</pre>
+            </div>
+
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 class="font-semibold text-green-900 mb-2">🚀 Utilisation</h3>
+                <pre class="bg-white p-3 rounded text-sm" id="usageCommand">SWAGGER_URL=... python server.py</pre>
+            </div>
+
+            <button
+                onclick="restart()"
+                class="mt-6 w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+            >
+                🔄 Créer un autre serveur
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let swaggerSpec = null;
+        let tools = [];
+        let allExpanded = false;
+
+        function convertPathToToolName(path, method) {
+            const cleanPath = path.replace(/^\//, '').replace(/\//g, '_').replace(/[{}]/g, '');
+            return `${method}_${cleanPath}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+        }
+
+        function extractParameters(operation) {
+            const params = {};
+
+            // Path, query, header parameters
+            if (operation.parameters) {
+                for (const param of operation.parameters) {
+                    params[param.name] = {
+                        type: param.schema?.type || param.type || 'string',
+                        description: param.description || '',
+                        required: param.required || false,
+                        in: param.in
+                    };
+                }
+            }
+
+            // Request body
+            if (operation.requestBody) {
+                const content = operation.requestBody.content;
+                if (content?.['application/json']?.schema) {
+                    const schema = content['application/json'].schema;
+                    if (schema.properties) {
+                        const required = schema.required || [];
+                        for (const [name, prop] of Object.entries(schema.properties)) {
+                            params[name] = {
+                                type: prop.type || 'string',
+                                description: prop.description || '',
+                                required: required.includes(name),
+                                in: 'body'
+                            };
+                        }
+                    }
+                }
+            }
+
+            return params;
+        }
+
+        async function loadSwagger() {
+            const url = document.getElementById('swaggerUrl').value.trim();
+            const serverName = document.getElementById('serverName').value.trim() || 'swagger-mcp-server';
+
+            if (!url) {
+                showError('Veuillez entrer une URL valide');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const text = await response.text();
+
+                // Try JSON first, then YAML
+                try {
+                    swaggerSpec = JSON.parse(text);
+                } catch {
+                    swaggerSpec = jsyaml.load(text);
+                }
+
+                // Parse tools
+                tools = [];
+                for (const [path, methods] of Object.entries(swaggerSpec.paths)) {
+                    for (const [method, operation] of Object.entries(methods)) {
+                        if (['get', 'post', 'put', 'patch', 'delete'].includes(method)) {
+                            const toolName = convertPathToToolName(path, method);
+                            const params = extractParameters(operation);
+
+                            tools.push({
+                                name: toolName,
+                                method: method.toUpperCase(),
+                                path: path,
+                                description: operation.summary || operation.description || `${method.toUpperCase()} ${path}`,
+                                parameters: params,
+                                responses: operation.responses || {}
+                            });
+                        }
+                    }
+                }
+
+                document.getElementById('loading').classList.add('hidden');
+                displayTools();
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+
+            } catch (error) {
+                document.getElementById('loading').classList.add('hidden');
+                showError(`Erreur lors du chargement: ${error.message}`);
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.querySelector('p').textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function displayTools() {
+            const toolsList = document.getElementById('toolsList');
+            document.getElementById('toolCount').textContent = tools.length;
+
+            toolsList.innerHTML = tools.map((tool, index) => `
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div
+                        class="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors flex justify-between items-center"
+                        onclick="toggleTool(${index})"
+                    >
+                        <div class="flex items-center gap-3">
+                            <span class="px-3 py-1 rounded text-xs font-semibold ${getMethodColor(tool.method)}">
+                                ${tool.method}
+                            </span>
+                            <span class="font-mono text-sm">${tool.name}</span>
+                        </div>
+                        <svg id="arrow-${index}" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+
+                    <div id="tool-${index}" class="hidden p-4 border-t border-gray-200">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description (éditable)</label>
+                            <textarea
+                                id="desc-${index}"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                rows="3"
+                                onchange="updateDescription(${index}, this.value)"
+                            >${tool.description}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">💡 Rendez cette description claire pour le LLM</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-gray-700 mb-2">📥 Paramètres d'entrée</h4>
+                            ${Object.keys(tool.parameters).length > 0 ? `
+                                <div class="bg-gray-50 rounded-lg p-3 space-y-2">
+                                    ${Object.entries(tool.parameters).map(([name, param]) => `
+                                        <div class="flex items-start gap-2">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-mono">${name}</span>
+                                            <span class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">${param.type}</span>
+                                            ${param.required ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">requis</span>' : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">optionnel</span>'}
+                                            <span class="text-xs text-gray-600">${param.description || 'Pas de description'}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p class="text-gray-500 text-sm">Aucun paramètre</p>'}
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">📤 Réponses</h4>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                ${Object.entries(tool.responses).map(([code, response]) => `
+                                    <div class="flex items-start gap-2 mb-1">
+                                        <span class="px-2 py-1 ${code.startsWith('2') ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'} rounded text-xs font-mono">${code}</span>
+                                        <span class="text-xs text-gray-600">${response.description || 'Pas de description'}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getMethodColor(method) {
+            const colors = {
+                'GET': 'bg-blue-100 text-blue-800',
+                'POST': 'bg-green-100 text-green-800',
+                'PUT': 'bg-yellow-100 text-yellow-800',
+                'PATCH': 'bg-orange-100 text-orange-800',
+                'DELETE': 'bg-red-100 text-red-800'
+            };
+            return colors[method] || 'bg-gray-100 text-gray-800';
+        }
+
+        function toggleTool(index) {
+            const content = document.getElementById(`tool-${index}`);
+            const arrow = document.getElementById(`arrow-${index}`);
+
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function expandAll() {
+            allExpanded = !allExpanded;
+            tools.forEach((_, index) => {
+                const content = document.getElementById(`tool-${index}`);
+                const arrow = document.getElementById(`arrow-${index}`);
+
+                if (allExpanded) {
+                    content.classList.remove('hidden');
+                    arrow.style.transform = 'rotate(180deg)';
+                } else {
+                    content.classList.add('hidden');
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+
+        function updateDescription(index, value) {
+            tools[index].description = value;
+        }
+
+        function generateServer() {
+            const serverName = document.getElementById('serverName').value.trim() || 'swagger-mcp-server';
+            const swaggerUrl = document.getElementById('swaggerUrl').value.trim();
+
+            // Generate the Python code with custom descriptions
+            const code = generatePythonCode(serverName, swaggerUrl);
+
+            document.getElementById('generatedCode').textContent = code;
+            document.getElementById('usageCommand').textContent = `SWAGGER_URL=${swaggerUrl} python server.py`;
+
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+        }
+
+        function generatePythonCode(serverName, swaggerUrl) {
+            // Generate tool descriptions mapping
+            const descriptionsMap = tools.map(tool =>
+                `    "${tool.name}": "${tool.description.replace(/"/g, '\\"')}"`
+            ).join(',\n');
+
+            return `#!/usr/bin/env python3
+"""
+Serveur MCP généré automatiquement depuis: ${swaggerUrl}
+Nom: ${serverName}
+"""
+
+import os
+import json
+import yaml
+import requests
+from typing import Any, Dict, Optional
+from urllib.parse import urlencode
+import re
+
+from fastmcp import FastMCP
+
+# Initialiser FastMCP
+mcp = FastMCP("${serverName}")
+
+# Descriptions personnalisées
+CUSTOM_DESCRIPTIONS = {
+${descriptionsMap}
+}
+
+# Variables globales
+swagger_spec = None
+base_url = ""
+api_key = None
+
+def load_swagger_spec(swagger_url: str):
+    global swagger_spec, base_url
+
+    response = requests.get(swagger_url, timeout=10)
+    response.raise_for_status()
+
+    content_type = response.headers.get('content-type', '')
+
+    if 'yaml' in content_type or swagger_url.endswith(('.yaml', '.yml')):
+        swagger_spec = yaml.safe_load(response.text)
+    else:
+        swagger_spec = response.json()
+
+    if swagger_spec.get('servers') and len(swagger_spec['servers']) > 0:
+        base_url = swagger_spec['servers'][0]['url']
+    elif swagger_spec.get('host'):
+        scheme = swagger_spec.get('schemes', ['https'])[0]
+        base_path = swagger_spec.get('basePath', '')
+        base_url = f"{scheme}://{swagger_spec['host']}{base_path}"
+
+def convert_path_to_tool_name(path: str, method: str) -> str:
+    clean_path = path.strip('/')
+    clean_path = re.sub(r'[{}]', '', clean_path)
+    clean_path = clean_path.replace('/', '_')
+    clean_path = re.sub(r'[^a-zA-Z0-9_]', '_', clean_path)
+    return f"{method}_{clean_path}".lower()
+
+def convert_openapi_type_to_python(openapi_type: str) -> type:
+    type_mapping = {
+        'string': str,
+        'integer': int,
+        'number': float,
+        'boolean': bool,
+        'array': list,
+        'object': dict,
+    }
+    return type_mapping.get(openapi_type, str)
+
+def extract_parameters(operation: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    params = {}
+
+    if 'parameters' in operation:
+        for param in operation['parameters']:
+            param_name = param['name']
+            param_schema = param.get('schema', {})
+            param_type = param_schema.get('type', param.get('type', 'string'))
+
+            params[param_name] = {
+                'type': convert_openapi_type_to_python(param_type),
+                'description': param.get('description', ''),
+                'required': param.get('required', False)
+            }
+
+    if 'requestBody' in operation:
+        content = operation['requestBody'].get('content', {})
+        if 'application/json' in content:
+            schema = content['application/json'].get('schema', {})
+            if 'properties' in schema:
+                required_fields = schema.get('required', [])
+                for prop_name, prop_schema in schema['properties'].items():
+                    prop_type = prop_schema.get('type', 'string')
+                    params[prop_name] = {
+                        'type': convert_openapi_type_to_python(prop_type),
+                        'description': prop_schema.get('description', ''),
+                        'required': prop_name in required_fields
+                    }
+
+    return params
+
+def find_operation(tool_name: str):
+    if not swagger_spec:
+        raise ValueError("Spec Swagger non chargée")
+
+    for path, methods in swagger_spec['paths'].items():
+        for method, operation in methods.items():
+            if convert_path_to_tool_name(path, method) == tool_name:
+                return path, method.upper(), operation
+
+    raise ValueError(f"Outil {tool_name} non trouvé")
+
+def execute_api_call(tool_name: str, arguments: Dict[str, Any]) -> str:
+    path, method, operation = find_operation(tool_name)
+
+    url = base_url + path
+    path_params = {}
+    query_params = {}
+    body = {}
+
+    if 'parameters' in operation:
+        for param in operation['parameters']:
+            param_name = param['name']
+            if param_name in arguments:
+                value = arguments[param_name]
+                if param['in'] == 'path':
+                    path_params[param_name] = value
+                elif param['in'] == 'query':
+                    query_params[param_name] = value
+
+    for key, value in path_params.items():
+        url = url.replace(f'{{{key}}}', str(value))
+
+    if query_params:
+        url += '?' + urlencode(query_params)
+
+    if 'requestBody' in operation:
+        for key, value in arguments.items():
+            if key not in path_params and key not in query_params:
+                body[key] = value
+
+    headers = {'Content-Type': 'application/json'}
+    if api_key:
+        headers['Authorization'] = f'Bearer {api_key}'
+
+    try:
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=headers,
+            json=body if body else None,
+            timeout=30
+        )
+
+        try:
+            result = response.json()
+            return json.dumps(result, indent=2, ensure_ascii=False)
+        except:
+            return response.text
+
+    except Exception as e:
+        return json.dumps({'error': str(e)}, indent=2)
+
+def create_tool_function(tool_name: str, description: str, params: Dict[str, Dict[str, Any]]):
+    required_params = []
+    optional_params = []
+    annotations = {}
+
+    for param_name, param_info in params.items():
+        param_type = param_info['type']
+        is_required = param_info['required']
+
+        if is_required:
+            required_params.append(f"{param_name}: {param_type.__name__}")
+            annotations[param_name] = param_type
+        else:
+            optional_params.append(f"{param_name}: Optional[{param_type.__name__}] = None")
+            annotations[param_name] = Optional[param_type]
+
+    param_list = required_params + optional_params
+
+    if not param_list:
+        def tool_func() -> str:
+            return execute_api_call(tool_name, {})
+
+        tool_func.__name__ = tool_name
+        tool_func.__doc__ = description
+        return tool_func
+
+    args_assignment = '\\n    '.join(
+        f"if {p.split(':')[0].strip()} is not None: args['{p.split(':')[0].strip()}'] = {p.split(':')[0].strip()}"
+        for p in param_list
+    )
+
+    func_code = f'''
+def {tool_name}({', '.join(param_list)}) -> str:
+    """{description}"""
+    args = {{}}
+    {args_assignment}
+    return execute_api_call("{tool_name}", args)
+'''
+
+    local_vars = {
+        'execute_api_call': execute_api_call,
+        'Optional': Optional,
+        'str': str,
+        'int': int,
+        'float': float,
+        'bool': bool,
+        'list': list,
+        'dict': dict
+    }
+
+    exec(func_code, local_vars)
+    func = local_vars[tool_name]
+    func.__annotations__ = {**annotations, 'return': str}
+
+    return func
+
+def register_tools():
+    if not swagger_spec or 'paths' not in swagger_spec:
+        return
+
+    for path, methods in swagger_spec['paths'].items():
+        for method, operation in methods.items():
+            if method.lower() not in ['get', 'post', 'put', 'patch', 'delete']:
+                continue
+
+            tool_name = convert_path_to_tool_name(path, method)
+
+            # Utiliser la description personnalisée si disponible
+            description = CUSTOM_DESCRIPTIONS.get(tool_name) or \\
+                         operation.get('summary') or \\
+                         operation.get('description') or \\
+                         f"{method.upper()} {path}"
+
+            params = extract_parameters(operation)
+            tool_func = create_tool_function(tool_name, description, params)
+            mcp.tool()(tool_func)
+
+def main():
+    global api_key
+
+    swagger_url = os.getenv('SWAGGER_URL')
+    api_key = os.getenv('API_KEY')
+
+    if not swagger_url:
+        print("❌ Erreur: SWAGGER_URL doit être défini")
+        return
+
+    load_swagger_spec(swagger_url)
+    register_tools()
+    mcp.run()
+
+if __name__ == "__main__":
+    main()
+`;
+        }
+
+        function copyCode() {
+            const code = document.getElementById('generatedCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Code copié dans le presse-papier !');
+            });
+        }
+
+        function backToStep1() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step1').classList.remove('hidden');
+        }
+
+        function restart() {
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('swaggerUrl').value = '';
+            document.getElementById('serverName').value = '';
+            swaggerSpec = null;
+            tools = [];
+        }
+    </script>
+</body>
+</html>
