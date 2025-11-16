@@ -282,6 +282,10 @@ def register_tools():
     print(f"✨ {tool_count} outils générés avec succès!", flush=True)
 
 
+swagger_url = "https://petstore3.swagger.io/api/v3/openapi.json"  # os.getenv('SWAGGER_URL')
+load_swagger_spec(swagger_url)
+register_tools()
+
 def main():
     """Point d'entrée principal"""
     global api_key
