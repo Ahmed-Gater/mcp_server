@@ -11,7 +11,6 @@ import requests
 from typing import Any, Dict, Optional, get_type_hints
 from urllib.parse import urlencode
 import re
-import inspect
 
 from fastmcp import FastMCP
 
@@ -48,7 +47,7 @@ def load_swagger_spec(swagger_url: str):
             base_path = swagger_spec.get('basePath', '')
             base_url = f"{scheme}://{swagger_spec['host']}{base_path}"
 
-        #base_url = "https://petstore.swagger.io/v2"
+        #base_url = "https://api.openbrewerydb.org/v1/breweries"
         print(f"✅ API chargée: {swagger_spec['info']['title']} v{swagger_spec['info']['version']}", flush=True)
         print(f"📍 URL de base: {base_url}", flush=True)
         print(f"🔧 Génération des outils MCP...", flush=True)
@@ -287,7 +286,9 @@ def register_tools():
     print(f"✨ {tool_count} outils générés avec succès!", flush=True)
 
 
-swagger_url = "https://petstore.swagger.io/v2/swagger.json"  # os.getenv('SWAGGER_URL')
+#swagger_url = "https://petstore.swagger.io/v2/swagger.json"  # os.getenv('SWAGGER_URL')
+#swagger_url = "https://raw.githubusercontent.com/internetarchive/openlibrary/refs/heads/master/static/openapi.json"
+swagger_url="https://recherche-entreprises.api.gouv.fr/openapi.json"
 load_swagger_spec(swagger_url)
 register_tools()
 
@@ -301,7 +302,7 @@ def main():
 
     if not swagger_url:
         print("❌ Erreur: SWAGGER_URL doit être défini", flush=True)
-        print("Usage: SWAGGER_URL=https://api.example.com/swagger.json python server.py", flush=True)
+        print("Usage: SWAGGER_URL=https://api.example.com/swagger.json python server_petstore.py", flush=True)
         return
 
     print("🚀 Démarrage du serveur MCP Swagger...", flush=True)
